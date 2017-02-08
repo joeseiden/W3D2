@@ -1,6 +1,8 @@
 require 'sqlite3'
 require 'singleton'
 
+require_relative 'model_base'
+
 class QuestionsDatabase < SQLite3::Database
   include Singleton
 
@@ -12,27 +14,27 @@ class QuestionsDatabase < SQLite3::Database
 
 end
 
-class User
+class User < ModelBase
 
-  def self.all
-    data = QuestionsDatabase.instance.execute("SELECT * FROM users")
-    data.map { |datum| User.new(datum) }
-  end
-
-  def self.find_by_id(id)
-    user = QuestionsDatabase.instance.execute(<<-SQL, id)
-      SELECT
-        *
-      FROM
-        users
-      WHERE
-        id = ?
-    SQL
-
-    return nil unless user.length > 0
-
-    User.new(user.first)
-  end
+  # def self.all
+  #   data = QuestionsDatabase.instance.execute("SELECT * FROM users")
+  #   data.map { |datum| User.new(datum) }
+  # end
+  #
+  # def self.find_by_id(id)
+  #   user = QuestionsDatabase.instance.execute(<<-SQL, id)
+  #     SELECT
+  #       *
+  #     FROM
+  #       users
+  #     WHERE
+  #       id = ?
+  #   SQL
+  #
+  #   return nil unless user.length > 0
+  #
+  #   User.new(user.first)
+  # end
 
   def self.find_by_name(fname, lname)
     user = QuestionsDatabase.instance.execute(<<-SQL, fname, lname)
@@ -49,12 +51,13 @@ class User
     User.new(user.first)
   end
 
+  attr_reader :table
   attr_accessor :id, :fname, :lname
 
   def initialize(options)
-    @id = options['id']
     @fname = options['fname']
     @lname = options['lname']
+    @id = options['id']
   end
 
   def authored_questions
@@ -93,31 +96,31 @@ class User
     data.first
   end
 
-  def save
-    if id.nil?
-      QuestionsDatabase.instance.execute(<<-SQL, fname, lname)
-        INSERT INTO
-          users (fname, lname)
-        VALUES
-          (?, ?)
-      SQL
-
-      id = QuestionsDatabase.last_insert_row_id
-    else
-      QuestionsDatabase.instance.execute(<<-SQL, fname, lname, id)
-        UPDATE
-          users
-        SELECT
-          fname = ?, lname = ?
-        WHERE
-          id = ?
-      SQL
-    end
-  end
+  # def save
+  #   if id.nil?
+  #     QuestionsDatabase.instance.execute(<<-SQL, fname, lname)
+  #       INSERT INTO
+  #         users (fname, lname)
+  #       VALUES
+  #         (?, ?)
+  #     SQL
+  #
+  #     id = QuestionsDatabase.instance.last_insert_row_id
+  #   else
+  #     QuestionsDatabase.instance.execute(<<-SQL, fname, lname, id)
+  #       UPDATE
+  #         users
+  #       SELECT
+  #         fname = ?, lname = ?
+  #       WHERE
+  #         id = ?
+  #     SQL
+  #   end
+  # end
 
 end
 
-class Question
+class Question < ModelBase
 
   def self.all
     data = QuestionsDatabase.instance.execute("SELECT * FROM questions")
@@ -194,13 +197,14 @@ class Question
     QuestionLike.most_liked_questions(n)
   end
 
+  attr_reader :table
   attr_accessor :id, :author_id, :title, :body
 
   def initialize(options)
-    @id = options['id']
     @title = options['title']
     @body = options['body']
     @author_id = options['author_id']
+    @id = options['id']
   end
 
   def author
@@ -247,7 +251,7 @@ class Question
 
 end
 
-class QuestionFollow
+class QuestionFollow < ModelBase
 
   def self.all
     data = QuestionsDatabase.instance.execute("SELECT * FROM question_follows")
@@ -360,19 +364,20 @@ class QuestionFollow
     SQL
   end
 
+  attr_reader :table
   attr_reader :id, :question_id, :user_id
 
   def initialize(options)
-    @id = options['id']
     @question_id = options['question_id']
     @user_id = options['user_id']
+    @id = options['id']
   end
 
 
 
 end
 
-class Reply
+class Reply < ModelBase
 
   def self.all
     data = QuestionsDatabase.instance.execute("SELECT * FROM replies")
@@ -451,14 +456,15 @@ class Reply
     reps.map { |rep| Reply.new(rep) }
   end
 
+  attr_reader :table
   attr_accessor :body, :id, :question_id, :parent_id, :author_id
 
   def initialize(options)
-    @id = options['id']
     @question_id = options['question_id']
     @parent_id = options['parent_id']
     @author_id = options['author_id']
     @body = options['body']
+    @id = options['id']
   end
 
   def author
@@ -501,7 +507,7 @@ class Reply
 
 end
 
-class QuestionLike
+class QuestionLike < ModelBase
 
   def self.all
     data = QuestionsDatabase.instance.execute("SELECT * FROM question_likes")
@@ -618,13 +624,12 @@ class QuestionLike
     ml_q.map { |q| Question.new(q) }
   end
 
-
-  attr_reader :id, :question_id, :user_id
+  attr_reader :id, :question_id, :user_id, :table
 
   def initialize(options)
-    @id = options['id']
     @question_id = options['question_id']
     @user_id = options['user_id']
+    @id = options['id']
   end
 
 end
